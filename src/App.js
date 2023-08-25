@@ -10,7 +10,6 @@ import ForgotPassword from "./pages/ForgotPassword"
 function App() {
   return (
     <>
-      <h1> App! </h1>
       <Router>
         <Routes>
           <Route path="/" element={<Explore />} />
