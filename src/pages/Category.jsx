@@ -9,6 +9,8 @@ import ListingItem from './components/ListingItem'
 function Category() {
   const [listings, setListings] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [lastFetchedListing, setLastFetchedListing] = useState(null)
+
   const params = useParams()
 
   useEffect(() => {
@@ -27,6 +29,9 @@ function Category() {
 
         // Execute query
         const querySnap = await getDocs(q)
+
+        const lastVisible = querySnap.docs[querySnap.docs.length - 1]
+        setLastFetchedListing(lastVisible)
 
         // Process results
         const listings = []
@@ -48,6 +53,45 @@ function Category() {
     fetchListings()
   }, [params.categoryName])
 
+  // pagination / load more
+  const onFetchMoreListings = async () => {
+    try {
+      // Get reference
+      const listingsRef = collection(db, "listings")
+
+      // Create query
+      const q = query(
+        listingsRef, 
+        where("type", "==", params.categoryName),
+        orderBy("timestamp", "desc"),
+        startAfter(lastFetchedListing),
+        limit(10),
+        )
+
+      // Execute query
+      const querySnap = await getDocs(q)
+
+      const lastVisible = querySnap.docs[querySnap.docs.length - 1]
+      setLastFetchedListing(lastVisible)
+
+      // Process results
+      const listings = []
+      querySnap.forEach((doc) => {
+        return listings.push({
+          id: doc.id,
+          data: doc.data(),
+        })
+      })
+
+      setListings((prevState) => [...prevState, ...listings])
+      setLoading(false)
+
+    } catch (error) {
+      toast.error("Error!")
+      console.log(error)
+    }
+  }
+
   return (
     <div className="category">
       <header>
@@ -67,6 +111,11 @@ function Category() {
               ))}
             </ul>
           </main>
+
+          <br />
+          {lastFetchedListing && (
+            <p className="loadMore" onClick={onFetchMoreListings} >Load 10 more</p>
+          )}
           </> )
           : <p>No listings for {params.categoryName} </p>
           }
